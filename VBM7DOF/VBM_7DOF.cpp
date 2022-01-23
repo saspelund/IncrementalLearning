@@ -1,4 +1,5 @@
 #define VBM_PROGRAM
+// g++ -std=c++11 -pthread VBM_7DOF_04.cpp -ldl -o /home/aspelun1/Documents/IncrementalLearning/VBM_7DOF
 
 //a bunch of random includes from Driver0_2.cpp
 #include <fcntl.h>
@@ -12,7 +13,6 @@
 #include <string.h>		// strerror
 #include <stdexcept>	// for exception, runtime_error, out_of_range
 
-// g++ -std=c++11 -pthread VBM_7DOF_04.cpp -ldl -o /home/aspelun1/Documents/IncrementalLearning/VBM_7DOF
 
 #include <unistd.h>
 #include <stdio.h>
@@ -33,19 +33,18 @@
 #include <sys/time.h>
 #include <ctime>
 
-#include "globalVarsAndConsts_7DOF_VBM_02.h"
-//#include "DataStorage_7DOF_VBM_01.h"
-//#include "configFileReader_7DOF_VBM_01.h"
 
-#include "../SharedFiles/globalVarsAndConsts_7DOF_Shared_01.h"
-#include "../SharedFiles/DataStorage_7DOF_01.h"
-#include "../SharedFiles/yei_threespace_api5.h"
+
+#include "../SharedFiles/globalVarsAndConsts_7DOF_Shared.h"
+#include "../SharedFiles/DataStorage_7DOF.h"
+#include "../SharedFiles/yei_threespace_api.h"
 #include "../SharedFiles/readerthreadWithYaw.h"
 #include "../SharedFiles/positionInitializer.h"
-#include "../SharedFiles/goalProcess02.h"
-#include "../SharedFiles/teensyReaderThread_01.h"
+#include "../SharedFiles/goalProcess.h"
+#include "../SharedFiles/teensyReaderThread.h"
 
-#include "matlabThread_7DOF_4.h"
+#include "globalVarsAndConsts_7DOF_VBM.h"
+#include "matlabThread_7DOF.h"
 
 
 // Define the function to be called when ctrl-c (SIGINT) signal is sent to process
@@ -71,7 +70,7 @@ int main(int argc, char * argv[])
 	time_t now = time(0);
 	tm *ltm = localtime(&now);
 	
-	char timeBuffer [21];
+	char timeBuffer [21]; //create dateTimeString to append to created file to distinguish them
 	int length = sprintf(timeBuffer, "%04d_%02d_%02d_%02d_%02d_%02d", 
 								1900 + ltm->tm_year,	//year
 								1 + ltm->tm_mon,		//month
@@ -81,17 +80,18 @@ int main(int argc, char * argv[])
 								ltm->tm_sec				//second
 								);
 	
+	// Check if the program call is of the correct form including the participant's initials and the number of DOFs
 	if (argc !=3)
 	{
 		printf("Correct program call is \"./ProgramName xyz #\"\nwhere \"xyz\" are participant initials and # is the number of degrees of freedom being used.\n");
 		return 1;
 	}
 	
+	// Given the correct input format, read in and store the number of DOFs for this trial
 	int NUM_OF_DOFs = atoi(argv[2]);
 	
-	
+	// Let's create the output file name based on the participants's initial
 	char folder[128];
-//	char parameterFilename[128];
 	char outputFilename[128];
 	char outputFilenameTemp[128];
 	char c;
@@ -114,23 +114,13 @@ int main(int argc, char * argv[])
 		{
 			mkdir(folder, 0777);
 			printf("Folder \"%s\" created\n", folder);
-//			return 1;
 		}
 		else
 		{
 			printf("Did not input \"y\". Quitting.\n");
 			return 1;
 		}
-//		return 1; //just in case?
 	}
-
-	
-//	const char configFileName[] = "VBM7DOF/ConfigFileVBM.txt";
-	
-//	configFileReader( configFileName );
-	
-	
-	
 
 	strcpy(outputFilename,folder); 
 	strcat(outputFilename,"/");
@@ -173,7 +163,7 @@ int main(int argc, char * argv[])
 	usleep(500000);
 	fd = openDevice(0);
 
-	/* Send byte to trigger Arduino to send string back */
+	/* Send byte sequence to trigger Arduino or IMUDongle to send their characteristic string back */
 	unsigned char msg[3];
 	msg[0] = 0xf7;
 	msg[1] = 0xd4;
